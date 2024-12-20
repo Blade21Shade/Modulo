@@ -1,16 +1,24 @@
-// A project making a custom modulo operator
+/* A project making a custom modulo operator
+ * Originally this project was just going to be 2 methods, a recursive method and a multiplication method, as I underestimated
+ * exactly what modulo needed, specifically when dividend xor divisor is negative.
+ * 
+ * This ended up going further from my first 2 ideas of recursion (the original reason for this) and multiplication to also include
+ * a version that was most efficient which used integer division
+ * 
+ * I did find the integer division idea when talking to GPT about modulus vs remainder in Java, and admittedly I feel kind of 
+ * dumb for not thinking about using it from the get go since it truly is very east to use, but I coded it out anyway just to
+ * make sure I understood exactly what was going on
+ */
 
-// Before starting this project I was thinking about how it would work, and figured that using some multiplication before
-// the main process of checking would be better implementation than using pure recursion/looping
-
-// However I decided to do both methods just to prove I could get both working
-// These are only for int, I don't want to attempt making a custom float modulo
-
+ // The Modulo function is here
+ // Since this was just a test file I also have the main file in here, but for real usage someone would just call
+ // moduloRecursionOuter() as it is the only public function available
 public class Modulo {
     public static void main(String[] args) throws Exception {
-        int dividendValue = 10;
-        int divisorValue = -3;
-        System.out.printf("The remainder for %5d mod %5d is: %3d\n", dividendValue, divisorValue, moduloRecursionOuter(dividendValue, divisorValue));
+        int dividendValue = 500;
+        int divisorValue = 3;
+        int remainderValue = moduloRecursionOuter(dividendValue, divisorValue);
+        System.out.printf("The remainder for %5d mod %5d is: %3d\n", dividendValue, divisorValue, remainderValue);
         System.out.println("Java answer:                           " + dividendValue % divisorValue);
     }
 
@@ -27,13 +35,17 @@ public class Modulo {
             return dividend;
         }
 
+        if (dividend == divisor) { // This is also a 0, just the 0 isn't x or y in: x mod y
+            return 0;
+        }
+
         // Value returned from this function 
         int remainder = 0;
 
         // Set up how returning is handled
         // Online I found that different languages handle it different ways, so I'm going to implement how Google does it
-        boolean dividendNegativeSolo = false; // Only dividend is negative, will return a positive number
-        boolean divisorNegativeSolo = false; // Only divisor is negative, will return a negative number 
+        boolean dividendNegativeSolo = false; // Only dividend is negative, function will return a positive number
+        boolean divisorNegativeSolo = false; // Only divisor is negative, function will return a negative number 
         boolean bothNegative = false; // Both are negative, will return a negative number
         
         // Set booleans as needed
@@ -43,12 +55,12 @@ public class Modulo {
             divisorNegativeSolo = true;
         } else if (dividend < 0 && divisor < 0) {
             bothNegative = true;
-            dividend *= -1; // Inverse the signs as this math will be equivalent to 
-            divisor *= -1;
+            dividend *= -1; // Inverse the signs, this math is the same for if both were positive
+            divisor *= -1; // The answer is corrected before returning with *= -1 
         }
 
-        // If the dividend and the divisor are the same sign and the divisor is greater than the dividend, return the dividend
-        if (!dividendNegativeSolo && !divisorNegativeSolo && divisor > dividend) {
+        // If the divisor is greater than the dividend and the dividend and the divisor are the same sign, return the dividend
+        if (divisor > dividend && !dividendNegativeSolo && !divisorNegativeSolo) {
             if (bothNegative) {
                 dividend *= -1;
             }
@@ -64,9 +76,11 @@ public class Modulo {
             remainder = moduloRecursionDivisorXorDividendNeg(dividend, divisor, divisor, true);
         } else if (bothNegative) { // If both are negative or positive the same math can be used, just flip the sign later
             remainder = moduloRecursionBothPosOrNeg(dividend, divisor);
-            remainder *= -1; // The function works with both positive numbers and returns a positive result, so it needs to be flipped
+            remainder *= -1; // The function works with both positive numbers and returns a positive result, so it needs to be inverted
         } else { // Neither negative
-            remainder = moduloRecursionBothPosOrNeg(dividend, divisor);
+            //remainder = moduloRecursionBothPosOrNeg(dividend, divisor);
+            //remainder = moduloMultiplyOriginalBothPosOrNeg(dividend, divisor);
+            remainder = moduloMultiplyAfterLookingOnlineBothPosOrNeg(dividend, divisor);
         }
 
         // Return the remainder
@@ -75,7 +89,7 @@ public class Modulo {
 
     // Recursive function used when both dividend and divisor are the same sign
     // I disliked calling the first argument "dividend" as every call except the original doesn't make sense when named that way
-    public static int moduloRecursionBothPosOrNeg(int changingValue, int divisor) {
+    private static int moduloRecursionBothPosOrNeg(int changingValue, int divisor) {
         int returnVal = changingValue;
         if (returnVal >= divisor) { // At least 1 more divisor can go into the current return value
             returnVal -= divisor; // Decrement
@@ -117,7 +131,7 @@ public class Modulo {
      * 7 > 10 = false (n = 2), enter logic
      * 10 - 7 = 3, return 3
      */
-    public static int moduloRecursionDivisorXorDividendNeg(int dividend, int changingValue, int baseDivisor, boolean divisorNegative) {
+    private static int moduloRecursionDivisorXorDividendNeg(int dividend, int changingValue, int baseDivisor, boolean divisorNegative) {
         int returnVal = changingValue;
         if (dividend > returnVal) { // "Reverse math" check
             returnVal += baseDivisor; // incrementing n in above explanation
@@ -131,8 +145,48 @@ public class Modulo {
         return returnVal; // Return chain
     }
 
-    // Modulo using multiplication instead of recursion
-    public int moduloMultiply(int dividend, int divisor) {
-        return 1;
+    // Modulo using a while loop and subtraction instead of recursion
+    private static int moduloWhileSubtractionBothPosOrNeg(int dividend, int divisor) {
+        while (dividend - divisor > divisor) { // Reduce the dividend value until it is one away from being greater than the divisor
+            dividend -= divisor;
+        }
+        return dividend - divisor; // Returns the remainder
+    }
+
+    // Modulo using while and multiplication instead of recursion
+    private static int moduloMultiplyOriginalBothPosOrNeg(int dividend, int divisor) {
+        int workingValue = 0; // This value is added to to get closer to the value of dividend until workingValue + divisor > dividend
+
+        // As long as divisor's value can still be added to workingValue while being smaller than dividend keep looping
+        while (workingValue + divisor <= dividend) {
+            int inWhileValue = 0; // Value added to workingValue every loop, is added to and multiplied
+
+            // Find value of "10^i * divisor" that can be added to workingValue without exceeding dividend's value
+            int i = 0;
+            while (workingValue + divisor * Math.pow(10, i+1) < dividend) {
+                i++;
+            }
+            inWhileValue += divisor * Math.pow(10, i);
+
+            // See inWhileValue's value can be multiplied by some integer such that if it is added to workingValue it is still
+            // less than dividend's value
+            i = 1;
+            while (workingValue + inWhileValue * (i + 1) < dividend) {
+                i++;
+            }
+            inWhileValue *= i;
+
+            // Finally, add this found number to workingValue
+            workingValue += inWhileValue;
+        }
+
+        return dividend - workingValue; // Working value is as close to dividend as possible, so subtract and return the remainder
+    }
+
+    // After doing some reading online, and asking chat GPT about modulus vs remainder in Java, I found a better way to write a modulus function
+    // This is an "ideal" way of doing it since it uses integer division, since I was planning on doing this project without using
+    // the % operator I also wanted to avoid using /, but I figured doing it this way would be find just for proof's sake
+    private static int moduloMultiplyAfterLookingOnlineBothPosOrNeg(int dividend, int divisor) {
+        return dividend - divisor * (dividend / divisor); 
     }
 }
