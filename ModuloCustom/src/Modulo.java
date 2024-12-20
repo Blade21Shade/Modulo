@@ -6,7 +6,7 @@
  * a version that was most efficient which used integer division
  * 
  * I did find the integer division idea when talking to GPT about modulus vs remainder in Java, and admittedly I feel kind of 
- * dumb for not thinking about using it from the get go since it truly is very east to use, but I coded it out anyway just to
+ * dumb for not thinking about using it from the get go since it truly is very easy to use, but I coded it out anyway just to
  * make sure I understood exactly what was going on
  */
 
